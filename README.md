@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| CI/CD | [![CI - Test](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/test.yml/badge.svg)](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/test.yml) [![CD - Build](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/build.yml/badge.svg)](https://github.com/OldGrumpyViking/hatch-conda/workflows/build.yml) |
+| CI/CD | [![CI - Test](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/test.yml/badge.svg)](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/test.yml) [![CD - Build](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/build.yml/badge.svg)](https://github.com/OldGrumpyViking/hatch-conda/actions/workflows/build.yml) |
 | Package | [![PyPI - Version](https://img.shields.io/pypi/v/hatch-conda.svg?logo=pypi&label=PyPI&logoColor=gold)](https://pypi.org/project/hatch-conda/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/hatch-conda.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/hatch-conda/) |
 | Meta | [![code style - black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/ambv/black) [![imports - isort](https://img.shields.io/badge/imports-isort-ef8336.svg)](https://github.com/pycqa/isort) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) |
 
