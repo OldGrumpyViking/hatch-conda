@@ -21,7 +21,7 @@ dependencies = [
   "mypy>=0.942",
 ]
 [envs.lint.scripts]
-typing = "mypy --install-types --non-interactive hatch_containers tests"
+typing = "mypy hatch_conda tests --install-types --non-interactive"
 style = [
   "flake8 .",
   "black --check --diff .",
