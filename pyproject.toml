@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hatch-conda"
+description = "Hatch plugin for conda environments"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+keywords = [
+  "conda",
+  "environment",
+  "hatch",
+  "plugin",
+]
+authors = [
+  { name = "OldGrumpyViking", email = "old.grumpy.viking@hotmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "hatch>=1.2.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+History = "https://github.com/OldGrumpyViking/hatch-conda/blob/master/HISTORY.md"
+Issues = "https://github.com/OldGrumpyViking/hatch-conda/issues"
+Source = "https://github.com/OldGrumpyViking/hatch-conda"
+
+[project.entry-points.hatch]
+containers = "hatch_conda.hooks"
+
+[tool.hatch.version]
+path = "hatch_conda/__about__.py"
+
+[tool.mypy]
+disallow_untyped_defs = false
+follow_imports = "normal"
+ignore_missing_imports = true
+pretty = true
+show_column_numbers = true
+warn_no_return = false
+warn_unused_ignores = true
+
+[tool.black]
+include = '\.pyi?$'
+line-length = 120
+skip-string-normalization = true
+target-version = ["py37"]
+
+[tool.isort]
+default_section = "THIRDPARTY"
+force_grid_wrap = 0
+include_trailing_comma = true
+known_first_party = ["hatch_conda"]
+line_length = 120
+multi_line_output = 3
+use_parentheses = true
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+  "hatch_conda/__about__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
