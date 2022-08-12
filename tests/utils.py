@@ -7,6 +7,7 @@ import tomli_w
 def dedent(text):
     return _dedent(text[1:])
 
+
 def update_project_environment(project, name, config):
     project_file = project.root / 'pyproject.toml'
     with open(str(project_file), 'r', encoding='utf-8') as f:

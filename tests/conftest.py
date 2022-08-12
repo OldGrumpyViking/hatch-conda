@@ -88,13 +88,16 @@ def config_file(tmp_path) -> ConfigFile:
     config.restore()
     return config
 
+
 @pytest.fixture(scope='session')
 def default_python_version():
     return f'{sys.version_info[0]}.{sys.version_info[1]}'
 
+
 @pytest.fixture(scope='session')
 def project_name():
     return os.urandom(12).hex()
+
 
 @pytest.fixture
 def conda_project(hatch, temp_dir_data, config_file, project_name):

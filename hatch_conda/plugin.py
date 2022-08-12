@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import re
 import sys
 from contextlib import contextmanager
 
 from hatch.env.plugin.interface import EnvironmentInterface
-from hatch.utils.fs import Path, temp_directory
-from hatch.utils.structures import EnvVars
 
 
 class CondaEnvironment(EnvironmentInterface):
@@ -47,8 +44,18 @@ class CondaEnvironment(EnvironmentInterface):
         return self.conda_env_name
 
     def create(self):
-        command = ['conda', 'create', '-y', '-n', self.conda_env_name, '-c', 'conda-forge',
-                   '--no-channel-priority', f'python={self.python_version}', 'pip']
+        command = [
+            'conda',
+            'create',
+            '-y',
+            '-n',
+            self.conda_env_name,
+            '-c',
+            'conda-forge',
+            '--no-channel-priority',
+            f'python={self.python_version}',
+            'pip',
+        ]
         if self.verbosity > 0:  # no cov
             self.platform.check_command(command)
         else:
@@ -58,14 +65,12 @@ class CondaEnvironment(EnvironmentInterface):
         self.platform.check_command_output(['conda', 'env', 'remove', '--name', self.conda_env_name])
 
     def exists(self):
-        output = self.platform.check_command_output(
-            ['conda', 'env', 'list']
-        )
+        output = self.platform.check_command_output(['conda', 'env', 'list'])
 
-        return any(line.split(" ")[0] == self.conda_env_name for line in output.splitlines())
+        return any(line.split(' ')[0] == self.conda_env_name for line in output.splitlines())
 
     def construct_pip_install_command(self, *args, **kwargs):
-        return ["conda", "run", "-n", self.conda_env_name] + super().construct_pip_install_command(*args, **kwargs)
+        return ['conda', 'run', '-n', self.conda_env_name] + super().construct_pip_install_command(*args, **kwargs)
 
     def install_project(self):
         with self:
@@ -82,7 +87,8 @@ class CondaEnvironment(EnvironmentInterface):
             return True
 
         with self:
-            process = self.platform.run_command(" ".join(['hatchling', 'dep', 'synced', '-p', 'python', *self.dependencies]),
+            process = self.platform.run_command(
+                ' '.join(['hatchling', 'dep', 'synced', '-p', 'python', *self.dependencies]),
                 capture_output=True,
             )
             return not process.returncode
@@ -97,9 +103,9 @@ class CondaEnvironment(EnvironmentInterface):
             yield
 
     def run_shell_command(self, command):
-        return self.platform.run_command(" ".join(["conda", "run", "-n", self.conda_env_name]) + " " + command)
+        return self.platform.run_command(' '.join(['conda', 'run', '-n', self.conda_env_name]) + ' ' + command)
 
     def enter_shell(self, name, path, args):  # no cov
         with self:
-            process = self.platform.run_command(" ".join(['conda', 'activate', self.conda_env_name]))
+            process = self.platform.run_command(' '.join(['conda', 'activate', self.conda_env_name]))
             self.platform.exit_with_code(process.returncode)
