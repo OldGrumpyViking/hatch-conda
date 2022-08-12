@@ -27,6 +27,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
+  "Framework :: Hatch",
 ]
 dependencies = [
   "hatch>=1.2.0",
@@ -39,7 +40,7 @@ Issues = "https://github.com/OldGrumpyViking/hatch-conda/issues"
 Source = "https://github.com/OldGrumpyViking/hatch-conda"
 
 [project.entry-points.hatch]
-containers = "hatch_conda.hooks"
+conda = "hatch_conda.hooks"
 
 [tool.hatch.version]
 path = "hatch_conda/__about__.py"

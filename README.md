@@ -17,10 +17,8 @@ This project is a copied and modified version of the [hatch-containers](https://
 - [Installation](#installation)
 - [Configuration](#configuration)
   - [Python](#python)
-  - [Image](#image)
   - [Command](#command)
-  - [Startup](#startup)
-  - [Shell](#shell)
+  - [Conda-forge](#conda-forge)
 - [Notes](#notes)
 - [Future](#future)
 - [License](#license)
@@ -55,14 +53,36 @@ If the [Python version](https://hatch.pypa.io/latest/config/environment/#python-
 
 If not set, then the `<MAJOR>.<MINOR>` version of the first `python` found along your `PATH` will be used, defaulting to the Python executable Hatch is running on.
 
+### Command
+
+The `command` option specifies the command that will be used to setup the environment. The possible options are `conda` and `mamba`.
+
+Default:
+
+```toml
+[envs.<ENV_NAME>]
+command = "conda"
+```
+
+### Conda-forge
+
+Indicates if the conda-forge index should be used.
+
+Default:
+
+```toml
+[envs.<ENV_NAME>]
+conda-forge = true
+```
+
 ## Notes
 
-- There must be a `conda` executable along your `PATH`.
+- There must be a `conda` or `mamba` executable along your `PATH`.
 - The `env-exclude` [environment variable filter](https://hatch.pypa.io/latest/config/environment/#filters) has no effect.
 
 ## Future
 
-...
+1. Install available packages from conda + conda-forge before using pip.
 
 ## License
 
