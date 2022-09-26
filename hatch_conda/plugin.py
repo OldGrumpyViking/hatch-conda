@@ -24,7 +24,7 @@ class CondaEnvironment(EnvironmentInterface):
         return {'command': str, 'conda-forge': bool}
 
     def _config_value(self, field_name, default, valid=None):
-        class_name = f'_config_{field_name.replace('-', '_')}'
+        class_name = f'_config_{field_name.replace("-", "_")}'
         if self.__dict__[class_name] is None:
             value = self.config.get(field_name, default)
             if not isinstance(value, self.get_option_types()[field_name]):
