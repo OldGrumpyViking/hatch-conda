@@ -92,6 +92,7 @@ class CondaEnvironment(EnvironmentInterface):
             self.platform.check_command(command)
         else:
             self.platform.check_command_output(command)
+        self.apply_env_vars()
 
     def remove(self):
         self.platform.check_command_output([self.config_command, 'env', 'remove', '-y', '--name', self.conda_env_name])
@@ -106,10 +107,12 @@ class CondaEnvironment(EnvironmentInterface):
         return self.construct_conda_run_command(super().construct_pip_install_command(*args, **kwargs))
 
     def install_project(self):
+        self.apply_env_vars()
         with self:
             self.platform.check_command(self.construct_pip_install_command([self.apply_features(self.project_path)]))
 
     def install_project_dev_mode(self):
+        self.apply_env_vars()
         with self:
             self.platform.check_command(
                 self.construct_pip_install_command(['--editable', self.apply_features(self.project_path)])
@@ -118,7 +121,7 @@ class CondaEnvironment(EnvironmentInterface):
     def dependencies_in_sync(self):
         if not self.dependencies:
             return True
-
+        self.apply_env_vars()
         with self:
             process = self.platform.run_command(
                 ' '.join(['hatchling', 'dep', 'synced', '-p', 'python', *self.dependencies]),
@@ -127,6 +130,7 @@ class CondaEnvironment(EnvironmentInterface):
             return not process.returncode
 
     def sync_dependencies(self):
+        self.apply_env_vars()
         with self:
             self.platform.check_command(self.construct_pip_install_command(self.dependencies))
 
@@ -136,6 +140,7 @@ class CondaEnvironment(EnvironmentInterface):
             yield
 
     def run_shell_command(self, command):
+        self.apply_env_vars()
         return self.platform.run_command(
             ' '.join(
                 self.construct_conda_run_command(
@@ -148,5 +153,12 @@ class CondaEnvironment(EnvironmentInterface):
 
     def enter_shell(self, name, path, args):  # no cov
         with self:
+            self.apply_env_vars()
             process = self.platform.run_command(' '.join([self.config_command, 'activate', self.conda_env_name]))
             self.platform.exit_with_code(process.returncode)
+
+    def apply_env_vars(self):
+        env_vars = []
+        for env_var, value in dict(self.env_vars).items():
+            env_vars.append(f"{env_var}={value}")
+        self.platform.check_command(["conda", "env", "config", "vars", "set"] + env_vars + ["-n", self.conda_env_name])

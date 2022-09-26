@@ -6,9 +6,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 26/09/2022
+
+### Added
+- Environment Variables are now passed on to the conda environment.
+
 ## [0.2.0] - 12/08/2022
 
-### Added 
+### Added
 
  - Trove classifier for hatch framework.
  - Option to use mamba.
