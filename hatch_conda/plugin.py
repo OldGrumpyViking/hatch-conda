@@ -161,7 +161,7 @@ class CondaEnvironment(EnvironmentInterface):
         env_vars = []
         for env_var, value in dict(self.env_vars).items():
             value_fixed = value
-            if sys.platform == "win32":
-                value_fixed = value_fixed.replace("%", "%%%%%%%%")
+            if sys.platform == 'win32':
+                value_fixed = value_fixed.replace('%', '%%%%%%%%')
             env_vars.append(f'{env_var}={value_fixed}')
         self.platform.check_command(['conda', 'env', 'config', 'vars', 'set', '-n', self.conda_env_name, '--'] + env_vars)
