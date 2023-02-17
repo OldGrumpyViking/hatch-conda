@@ -1,9 +1,47 @@
 from __future__ import annotations
 
+import shutil
+import signal
 import sys
 from contextlib import contextmanager
+from types import FrameType
+from typing import Callable
 
+import pexpect
 from hatch.env.plugin.interface import EnvironmentInterface
+
+
+class ShellManager:
+    def __init__(self, environment: EnvironmentInterface):
+        self.environment = environment
+
+    def enter_bash(self, path: str, args: list[str], cmdl: str) -> None:
+        self.spawn_linux_shell(path or 'bash', args or ['-i'], cmdl)
+
+    def enter_zsh(self, path: str, args: list[str], cmdl: str) -> None:
+        self.spawn_linux_shell(path or 'zsh', args or ['-i'], cmdl)
+
+    def spawn_linux_shell(
+        self, path: str, args: list[str] | None = None, cmdl: str = '', callback: Callable | None = None
+    ) -> None:
+        columns, lines = shutil.get_terminal_size()
+        terminal = pexpect.spawn(path, args=args, dimensions=(lines, columns))
+
+        def sigwinch_passthrough(sig: int, data: FrameType | None) -> None:
+            new_columns, new_lines = shutil.get_terminal_size()
+            terminal.setwinsize(new_lines, new_columns)
+
+        signal.signal(signal.SIGWINCH, sigwinch_passthrough)
+
+        terminal.sendline(cmdl)
+
+        if callback is not None:
+            callback(terminal)
+
+        terminal.interact(escape_character=None)
+        terminal.close()
+
+        self.environment.platform.exit_with_code(terminal.exitstatus)
 
 
 class CondaEnvironment(EnvironmentInterface):
@@ -18,6 +56,8 @@ class CondaEnvironment(EnvironmentInterface):
 
         self.conda_env_name = f'{self.metadata.core.name}_{self.name}_{self.python_version}'
         self.project_path = '.'
+
+        self.shells = ShellManager(self)
 
     @staticmethod
     def get_option_types():
@@ -152,10 +192,13 @@ class CondaEnvironment(EnvironmentInterface):
         )
 
     def enter_shell(self, name, path, args):  # no cov
-        with self:
+        cmdl = f'{self.config_command} activate {self.conda_env_name}'
+        shell_executor = getattr(self.shells, f'enter_{name}', None)
+        if shell_executor is None:
+            raise NotImplementedError(f'entering {name} shell in not supported yet')
+        else:
             self.apply_env_vars()
-            process = self.platform.run_command(' '.join([self.config_command, 'activate', self.conda_env_name]))
-            self.platform.exit_with_code(process.returncode)
+            shell_executor(path, args, cmdl)
 
     def apply_env_vars(self):
         env_vars = []
