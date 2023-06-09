@@ -4,6 +4,7 @@ dependencies = [
   "pytest",
   "pytest-cov",
   "pytest-mock",
+  "tomli"
 ]
 
 [envs.default.scripts]
