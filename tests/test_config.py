@@ -14,7 +14,15 @@ class TestPythonVersion:
             },
         )
         environment = CondaEnvironment(
-            isolation, project.metadata, 'default', project.config.envs['default'], {}, data_dir, platform, 0
+            root=isolation,
+            metadata=project.metadata,
+            name='default',
+            config=project.config.envs['default'],
+            matrix_variables={},
+            data_directory=data_dir,
+            isolated_data_directory=None,
+            platform=platform,
+            verbosity=0,
         )
 
         assert environment.python_version == default_python_version
@@ -29,7 +37,15 @@ class TestPythonVersion:
             },
         )
         environment = CondaEnvironment(
-            isolation, project.metadata, 'default', project.config.envs['default'], {}, data_dir, platform, 0
+            root=isolation,
+            metadata=project.metadata,
+            name='default',
+            config=project.config.envs['default'],
+            matrix_variables={},
+            data_directory=data_dir,
+            isolated_data_directory=None,
+            platform=platform,
+            verbosity=0,
         )
 
         assert environment.python_version == '3.10'
@@ -43,8 +59,17 @@ class TestPythonVersion:
                 'tool': {'hatch': {'envs': {'default': env_config}}},
             },
         )
+
         environment = CondaEnvironment(
-            isolation, project.metadata, 'default', project.config.envs['default'], {}, data_dir, platform, 0
+            root=isolation,
+            metadata=project.metadata,
+            name='default',
+            config=project.config.envs['default'],
+            matrix_variables={},
+            data_directory=data_dir,
+            isolated_data_directory=None,
+            platform=platform,
+            verbosity=0,
         )
 
         assert environment.python_version == '3.10'
