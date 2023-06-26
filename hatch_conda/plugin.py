@@ -130,20 +130,21 @@ class CondaEnvironment(EnvironmentInterface):
         return self._get_conda_env_path(self.conda_env_name)
 
     def create(self):
-        if not self.environment_file or self.config_command == 'micromamba':
-            command = [self.config_command, 'create', '--file', self.environment_file, '-y']
-        else:
-            command = [self.config_command, 'env', 'create']
-
-        command += ['-n', self.conda_env_name]
-
         if not self.environment_file:
+            command = [self.config_command, 'create', '-y']
             if self.config_conda_forge:
                 command += ['-c', 'conda-forge', '--no-channel-priority']
             command += [
                 f'python={self.python_version}',
                 'pip',
             ]
+        elif self.config_command == 'micromamba':
+            command = ['micromamba', 'create', '-y', '--file', self.environment_file]
+        else:
+            command = [self.config_command, 'env', 'create', '--file', self.environment_file]
+
+        command += ['-n', self.conda_env_name]
+
         if self.verbosity > 0:  # no cov
             self.platform.check_command(command)
         else:
