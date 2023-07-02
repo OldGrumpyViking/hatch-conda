@@ -19,8 +19,8 @@ This project is a copied and modified version of the [hatch-containers](https://
   - [Python](#python)
   - [Command](#command)
   - [Conda-forge](#conda-forge)
+  - [Environment file](#environment-file)
 - [Notes](#notes)
-- [Future](#future)
 - [License](#license)
 
 ## Installation
@@ -55,7 +55,7 @@ If not set, then the `<MAJOR>.<MINOR>` version of the first `python` found along
 
 ### Command
 
-The `command` option specifies the command that will be used to setup the environment. The possible options are `conda` and `mamba`.
+The `command` option specifies the command that will be used to setup the environment. The possible options are `conda`, `mamba` and `micromamba`.
 
 Default:
 
@@ -75,14 +75,20 @@ Default:
 conda-forge = true
 ```
 
+### Environment file
+By default packages will be installed using pip. However, to install packages using conda, conda-forge, or any other channel, you can specify a conda environment file:
+
+```toml
+[envs.<ENV_NAME>]
+environment-file = "environment.yml"
+```
+
+When using an environment file, the channel and python version specified in the environment file will be used. After installing the environment, any extra packages specified in the dependencies will be installed, as well as the local package. 
+
 ## Notes
 
-- There must be a `conda` or `mamba` executable along your `PATH`.
+- There must be a `conda`, `mamba`, or `micromamba` executable along your `PATH`.
 - The `env-exclude` [environment variable filter](https://hatch.pypa.io/latest/config/environment/#filters) has no effect.
-
-## Future
-
-1. Install available packages from conda + conda-forge before using pip.
 
 ## License
 
