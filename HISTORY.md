@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.4.0] - 02/07/2023
 
 ### Added
 - A conda `environment.yml` file can specified, which will be used to set up the environment. This allows installing packages from, e.g., the `conda-forge` index.
