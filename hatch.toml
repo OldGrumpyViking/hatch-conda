@@ -17,6 +17,7 @@ dependencies = [
   "flake8>=4.0.1",
   "flake8-bugbear>=22.3.23",
   "flake8-quotes>=3.3.1",
+  "Flake8-pyproject>=1.2.3",
   "black>=22.3.0",
   "isort>=5.10.1",
   "mypy>=0.942",

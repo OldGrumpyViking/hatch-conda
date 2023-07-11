@@ -57,30 +57,34 @@ warn_no_return = false
 warn_unused_ignores = true
 
 [tool.black]
-include = '\.pyi?$'
-line-length = 120
-skip-string-normalization = true
 target-version = ["py37"]
+line-length = 120
 
 [tool.isort]
-default_section = "THIRDPARTY"
-force_grid_wrap = 0
+py_version = "37"
+profile = "black"
 include_trailing_comma = true
-known_first_party = ["hatch_conda"]
-line_length = 120
-multi_line_output = 3
 use_parentheses = true
+src_paths = ["hatch_conda", "tests"]
+line_length = 120
 
 [tool.coverage.run]
 branch = true
 parallel = true
+source_pkgs = ["hatch_conda", "tests"]
 omit = [
   "hatch_conda/__about__.py",
 ]
 
 [tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+fail_under = 0
+show_missing = true
+skip_covered = true
+skip_empty = true
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:", "raise NotImplementedError"]
+
+[tool.flake8]
+exclude = [".direnv", ]
+select = ["B","C","E","F","W","B001","B003","B006","B007","B301","B305","B306","B902","Q001","Q002","Q003"]
+ignore = ["E203","E722","W503"]
+max-line-length = 120

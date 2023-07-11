@@ -19,13 +19,13 @@ class ShellManager:
         self.environment = environment
 
     def enter_bash(self, path: str, args: list[str], cmdl: str) -> None:
-        self.spawn_linux_shell(path or 'bash', args or ['-i'], cmdl)
+        self.spawn_linux_shell(path or "bash", args or ["-i"], cmdl)
 
     def enter_zsh(self, path: str, args: list[str], cmdl: str) -> None:
-        self.spawn_linux_shell(path or 'zsh', args or ['-i'], cmdl)
+        self.spawn_linux_shell(path or "zsh", args or ["-i"], cmdl)
 
     def spawn_linux_shell(
-        self, path: str, args: list[str] | None = None, cmdl: str = '', callback: Callable | None = None
+        self, path: str, args: list[str] | None = None, cmdl: str = "", callback: Callable | None = None
     ) -> None:
         columns, lines = shutil.get_terminal_size()
         terminal = pexpect.spawn(path, args=args, dimensions=(lines, columns))
@@ -34,7 +34,7 @@ class ShellManager:
             new_columns, new_lines = shutil.get_terminal_size()
             terminal.setwinsize(new_lines, new_columns)
 
-        signal.signal(signal.SIGWINCH, sigwinch_passthrough)
+        signal.signal(signal.SIGWINCH, sigwinch_passthrough)  # type: ignore
 
         terminal.sendline(cmdl)
 
@@ -48,7 +48,7 @@ class ShellManager:
 
 
 class CondaEnvironment(EnvironmentInterface):
-    PLUGIN_NAME = 'conda'
+    PLUGIN_NAME = "conda"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -58,14 +58,14 @@ class CondaEnvironment(EnvironmentInterface):
         self._config_environment_file = None
         self.__python_version = None
 
-        self.conda_env_name = f'{self.metadata.core.name}_{self.name}_{self.python_version}'
-        self.project_path = '.'
+        self.conda_env_name = f"{self.metadata.core.name}_{self.name}_{self.python_version}"
+        self.project_path = "."
 
         self.shells = ShellManager(self)
 
     @staticmethod
     def get_option_types():
-        return {'command': str, 'conda-forge': bool, 'environment-file': str}
+        return {"command": str, "conda-forge": bool, "environment-file": str}
 
     def _config_value(self, field_name, default, valid=None):
         class_name = f'_config_{field_name.replace("-", "_")}'
@@ -73,53 +73,53 @@ class CondaEnvironment(EnvironmentInterface):
             value = self.config.get(field_name, default)
             if not isinstance(value, self.get_option_types()[field_name]):
                 raise TypeError(
-                    f'Field `tool.hatch.envs.{self.name}.{field_name}` must be a '
-                    + '`{self.get_option_types()[field_name]}`'
+                    f"Field `tool.hatch.envs.{self.name}.{field_name}` must be a "
+                    + "`{self.get_option_types()[field_name]}`"
                 )
             if valid is not None and value not in valid:
-                raise ValueError(f'Field `tool.hatch.envs.{self.name}.{field_name}` must be any of [{valid}] values.')
+                raise ValueError(f"Field `tool.hatch.envs.{self.name}.{field_name}` must be any of [{valid}] values.")
             self.__dict__[class_name] = value
         return self.__dict__[class_name]
 
     @property
     def config_command(self):
-        return self._config_value('command', 'conda', ['conda', 'mamba', 'micromamba'])
+        return self._config_value("command", "conda", ["conda", "mamba", "micromamba"])
 
     @property
     def config_conda_forge(self):
-        return self._config_value('conda-forge', True)
+        return self._config_value("conda-forge", True)
 
     @property
     def environment_file(self):
-        return self._config_value('environment-file', False)
+        return self._config_value("environment-file", "")
 
     @property
     def python_version(self):
         if self.__python_version is None:
-            python_version = self.config.get('python', '')
+            python_version = self.config.get("python", "")
             if not python_version:
-                python_version = '.'.join(map(str, sys.version_info[:2]))
+                python_version = ".".join(map(str, sys.version_info[:2]))
             elif python_version.isdigit() and len(python_version) > 1:
-                python_version = f'{python_version[0]}.{python_version[1:]}'
+                python_version = f"{python_version[0]}.{python_version[1:]}"
 
             self.__python_version = python_version
 
         return self.__python_version
 
     def _get_conda_env_path(self, name: str):
-        if self.config_command == 'micromamba':
-            output = self.platform.check_command_output([self.config_command, 'info', '--name', name])
+        if self.config_command == "micromamba":
+            output = self.platform.check_command_output([self.config_command, "info", "--name", name])
 
-            match_env_location = r'env location : ([\S]*)\n'
+            match_env_location = r"env location : ([\S]*)\n"
             return re.findall(match_env_location, output)[0]
 
         else:
-            output = self.platform.check_command_output([self.config_command, 'env', 'list'])
+            output = self.platform.check_command_output([self.config_command, "env", "list"])
             env_names, env_paths = zip(
                 *[
-                    (line.split(' ')[0], line.split(' ')[-1])
+                    (line.split(" ")[0], line.split(" ")[-1])
                     for line in output.splitlines()
-                    if len(line.split(' ')[0]) > 1
+                    if len(line.split(" ")[0]) > 1
                 ]
             )
             if name not in env_names:
@@ -131,19 +131,19 @@ class CondaEnvironment(EnvironmentInterface):
 
     def create(self):
         if not self.environment_file:
-            command = [self.config_command, 'create', '-y']
+            command = [self.config_command, "create", "-y"]
             if self.config_conda_forge:
-                command += ['-c', 'conda-forge', '--no-channel-priority']
+                command += ["-c", "conda-forge", "--no-channel-priority"]
             command += [
-                f'python={self.python_version}',
-                'pip',
+                f"python={self.python_version}",
+                "pip",
             ]
-        elif self.config_command == 'micromamba':
-            command = ['micromamba', 'create', '-y', '--file', self.environment_file]
+        elif self.config_command == "micromamba":
+            command = ["micromamba", "create", "-y", "--file", self.environment_file]
         else:
-            command = [self.config_command, 'env', 'create', '--file', self.environment_file]
+            command = [self.config_command, "env", "create", "--file", self.environment_file]
 
-        command += ['-n', self.conda_env_name]
+        command += ["-n", self.conda_env_name]
 
         if self.verbosity > 0:  # no cov
             self.platform.check_command(command)
@@ -152,7 +152,7 @@ class CondaEnvironment(EnvironmentInterface):
         self.apply_env_vars()
 
     def remove(self):
-        self.platform.check_command_output([self.config_command, 'env', 'remove', '-y', '--name', self.conda_env_name])
+        self.platform.check_command_output([self.config_command, "env", "remove", "-y", "--name", self.conda_env_name])
 
     def exists(self):
         env_path = self._get_conda_env_path(self.conda_env_name)
@@ -161,7 +161,7 @@ class CondaEnvironment(EnvironmentInterface):
         return False
 
     def construct_conda_run_command(self, command):
-        return [self.config_command, 'run', '-n', self.conda_env_name] + command
+        return [self.config_command, "run", "-n", self.conda_env_name] + command
 
     def construct_pip_install_command(self, *args, **kwargs):
         return self.construct_conda_run_command(super().construct_pip_install_command(*args, **kwargs))
@@ -175,7 +175,7 @@ class CondaEnvironment(EnvironmentInterface):
         self.apply_env_vars()
         with self:
             self.platform.check_command(
-                self.construct_pip_install_command(['--editable', self.apply_features(self.project_path)])
+                self.construct_pip_install_command(["--editable", self.apply_features(self.project_path)])
             )
 
     def dependencies_in_sync(self):
@@ -184,7 +184,7 @@ class CondaEnvironment(EnvironmentInterface):
         self.apply_env_vars()
         with self:
             process = self.platform.run_command(
-                ' '.join(['hatchling', 'dep', 'synced', '-p', 'python', *self.dependencies]),
+                " ".join(["hatchling", "dep", "synced", "-p", "python", *self.dependencies]),
                 capture_output=True,
             )
             return not process.returncode
@@ -202,7 +202,7 @@ class CondaEnvironment(EnvironmentInterface):
     def run_shell_command(self, command):
         self.apply_env_vars()
         return self.platform.run_command(
-            ' '.join(
+            " ".join(
                 self.construct_conda_run_command(
                     [
                         command,
@@ -212,25 +212,25 @@ class CondaEnvironment(EnvironmentInterface):
         )
 
     def enter_shell(self, name, path, args):  # no cov
-        cmdl = f'{self.config_command} activate {self.conda_env_name}'
-        shell_executor = getattr(self.shells, f'enter_{name}', None)
+        cmdl = f"{self.config_command} activate {self.conda_env_name}"
+        shell_executor = getattr(self.shells, f"enter_{name}", None)
         if shell_executor is None:
-            raise NotImplementedError(f'entering {name} shell in not supported yet')
+            raise NotImplementedError(f"entering {name} shell in not supported yet")
         else:
             self.apply_env_vars()
             shell_executor(path, args, cmdl)
 
     def apply_env_vars(self):
-        if self.config_command == 'micromamba':
+        if self.config_command == "micromamba":
             for env_var, value in dict(self.env_vars).items():
                 os.environ[env_var] = value
         else:
             env_vars = []
             for env_var, value in dict(self.env_vars).items():
                 value_fixed = value
-                if sys.platform == 'win32':
-                    value_fixed = value_fixed.replace('%', '%%%%%%%%')
-                env_vars.append(f'{env_var}={value_fixed}')
+                if sys.platform == "win32":
+                    value_fixed = value_fixed.replace("%", "%%%%%%%%")
+                env_vars.append(f"{env_var}={value_fixed}")
             self.platform.check_command(
-                ['conda', 'env', 'config', 'vars', 'set', '-n', self.conda_env_name, '--'] + env_vars
+                ["conda", "env", "config", "vars", "set", "-n", self.conda_env_name, "--"] + env_vars
             )
