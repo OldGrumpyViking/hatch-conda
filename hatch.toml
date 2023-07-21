@@ -8,7 +8,7 @@ dependencies = [
 ]
 
 [envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=hatch_containers --cov=tests"
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=hatch_conda --cov=tests"
 no-cov = "cov --no-cov"
 
 [envs.lint]
