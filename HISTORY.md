@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+### Added
+- The `prefix` configuration option to specify file system location for the environment.
+
 ### Fixed
 - Fix `cov` script arg covering wrong package.
 

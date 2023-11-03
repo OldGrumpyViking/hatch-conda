@@ -83,7 +83,18 @@ By default packages will be installed using pip. However, to install packages us
 environment-file = "environment.yml"
 ```
 
-When using an environment file, the channel and python version specified in the environment file will be used. After installing the environment, any extra packages specified in the dependencies will be installed, as well as the local package. 
+When using an environment file, the channel and python version specified in the environment file will be used. After installing the environment, any extra packages specified in the dependencies will be installed, as well as the local package.
+
+### Prefix environments
+
+It's possible to identify environment py prefix (the path in the filesytem) rather than by name.
+
+```toml
+[envs.<ENV_NAME>]
+prefix = .venv/
+```
+
+Will create conda environment in the `.venv/` folder. This is usefull because a text editor might check for this location to use the vitual environment.
 
 ## Notes
 
