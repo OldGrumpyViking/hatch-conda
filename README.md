@@ -94,7 +94,7 @@ It's possible to identify environment py prefix (the path in the filesytem) rath
 prefix = .venv/
 ```
 
-Will create conda environment in the `.venv/` folder. This is usefull because a text editor might check for this location to use the vitual environment.
+Will create a conda environment in the `.venv/` folder. This is useful because a text editor might check for this location to use the virtual environment.
 
 ## Notes
 
