@@ -8,9 +8,10 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from types import FrameType
-from typing import Callable
+from typing import Any, Callable
 
 import pexpect
+from hatch.env.collectors.plugin.interface import EnvironmentCollectorInterface
 from hatch.env.plugin.interface import EnvironmentInterface
 
 
@@ -234,3 +235,33 @@ class CondaEnvironment(EnvironmentInterface):
             self.platform.check_command(
                 ["conda", "env", "config", "vars", "set", "-n", self.conda_env_name, "--"] + env_vars
             )
+
+
+class CondaEnvironmentCollector(EnvironmentCollectorInterface):
+    PLUGIN_NAME = "conda"
+
+    def finalize_config(self, config: dict[str, dict]) -> None:
+        for env_name, plugin_env_entry in self.config.items():
+            env_file = plugin_env_entry.get("environment-file", None)
+            if env_file:
+                deps = self._get_pip_deps(config_file=self.root / env_file)
+            else:
+                deps = []
+
+            env = config.setdefault(env_name, {})
+            env["dependencies"] = [*deps, *env.get("dependencies", ())]
+
+    def _get_pip_deps(self, config_file: Path) -> list[str]:
+        import yaml
+
+        with config_file.open() as file:
+            conda_file: dict[str, Any] = yaml.safe_load(file)
+        dep_entries: list[str] = []
+        for dep in conda_file.get("dependencies", []):
+            if not isinstance(dep, dict):
+                continue
+            if "pip" in dep.keys():
+                dep_entries = dep["pip"]
+        # remove pip arguments
+        deps = [entry for entry in dep_entries if not entry.startswith("-")]
+        return deps

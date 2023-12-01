@@ -83,7 +83,15 @@ By default packages will be installed using pip. However, to install packages us
 environment-file = "environment.yml"
 ```
 
-When using an environment file, the channel and python version specified in the environment file will be used. After installing the environment, any extra packages specified in the dependencies will be installed, as well as the local package. 
+When using an environment file, the channel and python version specified in the environment file will be used. After installing the environment, any extra packages specified in the dependencies will be installed, as well as the local package.
+
+#### Dependencies
+In order to being in pip dependencies from conda, add the following collector to hatch
+
+```toml
+[env.collectors.conda.<ENV_NAME>]
+environment-file = "environment.yml"
+```
 
 ## Notes
 
