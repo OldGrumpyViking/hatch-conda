@@ -67,9 +67,19 @@ def normalize_conda_dict(config: dict[str, str | list | dict[str, Any]]) -> dict
             list_config: dict[str, str | dict[str, Any]] = {}
             for item in value:
                 if isinstance(item, str):
-                    list_config[item] = ""
+                    if isinstance(list_config.get(item, None), dict):
+                        # we already have this as a key
+                        list_config[item][""] = ""  # type: ignore[index]
+                    else:
+                        list_config[item] = ""
                 elif isinstance(item, dict):
-                    list_config.update(item)
+                    new_dict = normalize_conda_dict(item)
+                    for k, v in new_dict.items():
+                        if isinstance(list_config.get(k, None), str):
+                            # we already have this as an entry
+                            list_config[k] = {"": "", **v}  # type: ignore[dict-item]
+                        else:
+                            list_config[k] = v
                 else:
                     raise NotImplementedError("Unexpected list in a list for conda config")
             normalized_config[key] = list_config
