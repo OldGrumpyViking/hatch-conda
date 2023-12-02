@@ -33,6 +33,7 @@ classifiers = [
 dependencies = [
   "hatch>=1.2.0",
   "pexpect~=4.8",
+  "pyyaml>=5.1.0",
 ]
 dynamic = ["version"]
 
