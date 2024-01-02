@@ -56,6 +56,7 @@ class CondaEnvironment(EnvironmentInterface):
         self._config_command = None
         self._config_conda_forge = None
         self._config_environment_file = None
+        self._config_prefix = None
         self.__python_version = None
 
         self.conda_env_name = f"{self.metadata.core.name}_{self.name}_{self.python_version}"
@@ -65,7 +66,12 @@ class CondaEnvironment(EnvironmentInterface):
 
     @staticmethod
     def get_option_types():
-        return {"command": str, "conda-forge": bool, "environment-file": str}
+        return {
+            "command": str,
+            "conda-forge": bool,
+            "environment-file": str,
+            "prefix": (str, type(None)),
+        }
 
     def _config_value(self, field_name, default, valid=None):
         class_name = f'_config_{field_name.replace("-", "_")}'
@@ -90,6 +96,10 @@ class CondaEnvironment(EnvironmentInterface):
         return self._config_value("conda-forge", True)
 
     @property
+    def config_prefix(self):
+        return self._config_value("prefix", None)
+
+    @property
     def environment_file(self):
         return self._config_value("environment-file", "")
 
@@ -107,6 +117,9 @@ class CondaEnvironment(EnvironmentInterface):
         return self.__python_version
 
     def _get_conda_env_path(self, name: str):
+        if self.config_prefix is not None:
+            return self.config_prefix
+
         if self.config_command == "micromamba":
             output = self.platform.check_command_output([self.config_command, "info", "--name", name])
 
@@ -142,8 +155,10 @@ class CondaEnvironment(EnvironmentInterface):
             command = ["micromamba", "create", "-y", "--file", self.environment_file]
         else:
             command = [self.config_command, "env", "create", "--file", self.environment_file]
-
-        command += ["-n", self.conda_env_name]
+        if self.config_prefix is not None:
+            command += ["--prefix", self.config_prefix]
+        else:
+            command += ["-n", self.conda_env_name]
 
         if self.verbosity > 0:  # no cov
             self.platform.check_command(command)
@@ -152,7 +167,14 @@ class CondaEnvironment(EnvironmentInterface):
         self.apply_env_vars()
 
     def remove(self):
-        self.platform.check_command_output([self.config_command, "env", "remove", "-y", "--name", self.conda_env_name])
+        command = [self.config_command, "env", "remove", "-y"]
+
+        if self.config_prefix is not None:
+            command += ["--prefix", self.config_prefix]
+        else:
+            command += ["-n", self.conda_env_name]
+
+        self.platform.check_command_output(command)
 
     def exists(self):
         env_path = self._get_conda_env_path(self.conda_env_name)
@@ -161,7 +183,14 @@ class CondaEnvironment(EnvironmentInterface):
         return False
 
     def construct_conda_run_command(self, command):
-        return [self.config_command, "run", "-n", self.conda_env_name] + command
+        head = [self.config_command, "run"]
+
+        if self.config_prefix is not None:
+            head += ["--prefix", self.config_prefix]
+        else:
+            head += ["-n", self.conda_env_name]
+
+        return [*head, *command]
 
     def construct_pip_install_command(self, *args, **kwargs):
         return self.construct_conda_run_command(super().construct_pip_install_command(*args, **kwargs))
