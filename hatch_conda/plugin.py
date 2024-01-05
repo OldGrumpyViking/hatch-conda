@@ -12,6 +12,7 @@ from typing import Callable
 
 import pexpect
 from hatch.env.plugin.interface import EnvironmentInterface
+from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 
 class ShellManager:
@@ -263,3 +264,42 @@ class CondaEnvironment(EnvironmentInterface):
             self.platform.check_command(
                 ["conda", "env", "config", "vars", "set", "-n", self.conda_env_name, "--"] + env_vars
             )
+
+
+class BuildInCondaEnvHook(BuildHookInterface):
+    PLUGIN_NAME = "conda"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._config_environment_file = None
+
+    @property
+    def environment_file(self):
+        if self._config_environment_file is not None:
+            return self._config_environment_file
+        env_file = self.config.get("environment-file", "")
+        field_name = f"tool.hatch.build.targets.<TARGET>.hooks.{self.PLUGIN_NAME}.environment-file"
+        if not isinstance(env_file, str):
+            msg = f"Field `{field_name}` must be a string"
+            raise TypeError(msg)
+        file_path = Path(self.root) / env_file
+        if not file_path.exists():
+            msg = f"{env_file} is missing. Please provide correct path for `{field_name}`"
+            raise FileNotFoundError(msg)
+        self._config_environment_file = env_file
+        return self._config_environment_file
+
+    def read_conda_deps(self) -> list[str]:
+        with (Path(self.root) / self.environment_file).open("r", encoding="utf8") as file:
+            contents = yaml.safe_load(file)
+        for item in contents["dependencies"]:
+            if isinstance(item, dict) and "pip" in item:
+                return item["pip"]
+        return []
+
+    def initialize(self, version: str, build_data: dict[str, Any]):
+        print(build_data)
+        if not self.environment_file:
+            raise ValueError("`environment-file` can't be empty for the conda hook")
+        build_data["dependencies"] += self.read_conda_deps()
