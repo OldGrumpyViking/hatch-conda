@@ -8,9 +8,10 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from types import FrameType
-from typing import Callable
+from typing import Any, Callable
 
 import pexpect
+import yaml
 from hatch.env.plugin.interface import EnvironmentInterface
 
 
@@ -47,6 +48,46 @@ class ShellManager:
         self.environment.platform.exit_with_code(terminal.exitstatus)
 
 
+def normalize_conda_dict(config: dict[str, str | list | dict[str, Any]]) -> dict[str, str | dict[str, Any]]:
+    """Aims:
+    * remove duplicate entries in lists
+    * equality regardless of entry order in lists
+
+    Rationale:
+    * Removing and recreating environments is expensive
+    * Changing order of dependencies doesn't impact environment configuration
+    """
+    normalized_config: dict[str, str | dict[str, Any]] = {}
+    for key, value in config.items():
+        if isinstance(value, str):
+            normalized_config[key] = value
+        elif isinstance(value, dict):
+            normalized_config[key] = normalize_conda_dict(value)
+        elif isinstance(value, list):
+            list_config: dict[str, str | dict[str, Any]] = {}
+            for item in value:
+                if isinstance(item, str):
+                    if isinstance(list_config.get(item, None), dict):
+                        # we already have this as a key
+                        list_config[item][""] = ""  # type: ignore[index]
+                    else:
+                        list_config[item] = ""
+                elif isinstance(item, dict):
+                    new_dict = normalize_conda_dict(item)
+                    for k, v in new_dict.items():
+                        if isinstance(list_config.get(k, None), str):
+                            # we already have this as an entry
+                            list_config[k] = {"": "", **v}  # type: ignore[dict-item]
+                        else:
+                            list_config[k] = v
+                else:
+                    raise NotImplementedError("Unexpected list in a list for conda config")
+            normalized_config[key] = list_config
+        else:
+            raise NotImplementedError("Unexpected non-str, non-list, non-dict type in conda config")
+    return normalized_config
+
+
 class CondaEnvironment(EnvironmentInterface):
     PLUGIN_NAME = "conda"
 
@@ -60,6 +101,7 @@ class CondaEnvironment(EnvironmentInterface):
         self.__python_version = None
 
         self.conda_env_name = f"{self.metadata.core.name}_{self.name}_{self.python_version}"
+        self.conda_contents = {}
         self.project_path = "."
 
         self.shells = ShellManager(self)
@@ -142,9 +184,18 @@ class CondaEnvironment(EnvironmentInterface):
     def find(self):
         return self._get_conda_env_path(self.conda_env_name)
 
-    def create(self):
+    def read_conda_file(self) -> dict[str, Any]:
+        env_file = Path(self.environment_file)
+        if not env_file.exists():
+            return {}
+        with env_file.open() as file:
+            contents = yaml.safe_load(file)
+        normalized_contents = normalize_conda_dict(contents)
+        return normalized_contents
+
+    def conda_env(self, command="create"):
         if not self.environment_file:
-            command = [self.config_command, "create", "-y"]
+            command = [self.config_command, command, "-y"]
             if self.config_conda_forge:
                 command += ["-c", "conda-forge", "--no-channel-priority"]
             command += [
@@ -152,9 +203,10 @@ class CondaEnvironment(EnvironmentInterface):
                 "pip",
             ]
         elif self.config_command == "micromamba":
-            command = ["micromamba", "create", "-y", "--file", self.environment_file]
+            command = ["micromamba", command, "-y", "--file", self.environment_file]
         else:
-            command = [self.config_command, "env", "create", "--file", self.environment_file]
+            command = [self.config_command, "env", command, "-y", "--file", self.environment_file]
+
         if self.config_prefix is not None:
             command += ["--prefix", self.config_prefix]
         else:
@@ -165,6 +217,10 @@ class CondaEnvironment(EnvironmentInterface):
         else:
             self.platform.check_command_output(command)
         self.apply_env_vars()
+        self.conda_contents = self.read_conda_file()
+
+    def create(self):
+        self.conda_env()
 
     def remove(self):
         command = [self.config_command, "env", "remove", "-y"]
@@ -208,6 +264,9 @@ class CondaEnvironment(EnvironmentInterface):
             )
 
     def dependencies_in_sync(self):
+        new_contents = self.read_conda_file()
+        if self.conda_contents != new_contents:
+            return False
         if not self.dependencies:
             return True
         self.apply_env_vars()
@@ -219,6 +278,7 @@ class CondaEnvironment(EnvironmentInterface):
             return not process.returncode
 
     def sync_dependencies(self):
+        self.conda_env("update")
         self.apply_env_vars()
         with self:
             self.platform.check_command(self.construct_pip_install_command(self.dependencies))
