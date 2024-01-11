@@ -31,7 +31,8 @@ pip install hatch-conda
 
 ## Configuration
 
-The [environment plugin](https://hatch.pypa.io/latest/plugins/environment/) name is `conda`.
+### Environment
+The [environment plugin](https://hatch.pypa.io/latest/plugins/environment/) name is `conda`. It allows using a conda environment for managing dependencies
 
 - ***pyproject.toml***
 
@@ -45,6 +46,26 @@ The [environment plugin](https://hatch.pypa.io/latest/plugins/environment/) name
     ```toml
     [envs.<ENV_NAME>]
     type = "conda"
+    ```
+### Environment Collector
+The [environment collector plugin](https://hatch.pypa.io/latest/plugins/environment-collector/) name is `conda`. It allows using the conda file to keep track of python dependencies, and prevents splitting dependencies between the conda file and `pyproject.toml`. It doesn't need conda to be installed and can be used without the [environment plugin](#environment)
+
+- ***pyproject.toml***
+
+    ```toml
+    [tool.hatch.env]
+    requires = ["hatch-conda"]
+    [tool.hatch.env.collectors.conda.<ENV_NAME>]
+    environment-file = "file.yaml"
+    ```
+
+- ***hatch.toml***
+
+    ```toml
+    [env]
+    requires = ["hatch-conda"]
+    [env.collectors.conda.<ENV_NAME>]
+    environment-file = "file.yaml"
     ```
 
 ### Python
@@ -84,6 +105,8 @@ environment-file = "environment.yml"
 ```
 
 When using an environment file, the channel and python version specified in the environment file will be used. After installing the environment, any extra packages specified in the dependencies will be installed, as well as the local package.
+
+For the collector plugin, please use `[env.collectors.conda.<ENV_NAME>]` instead.
 
 ### Prefix environments
 

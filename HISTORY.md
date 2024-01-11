@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - The `prefix` configuration option to specify file system location for the environment.
 
 ### Fixed
-- Update conda env when conda file is updated
+- Add env collector plugin to keep track of python dependencies in the conda file
 - Fix `cov` script arg covering wrong package.
 
 ## [0.4.1] - 11/07/2023
