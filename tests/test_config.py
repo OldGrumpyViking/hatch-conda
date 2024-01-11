@@ -2,10 +2,11 @@ import shutil
 from pathlib import Path
 
 import pytest
+import tomli_w
 import yaml
 from hatch.project.core import Project
 
-from hatch_conda.plugin import CondaEnvironment, normalize_conda_dict
+from hatch_conda.plugin import CondaEnvironment, CondaEnvironmentCollector, normalize_conda_dict
 
 
 class TestPythonVersion:
@@ -112,46 +113,49 @@ class TestNormalizeConfig:
 )
 class TestDependencyUpdate:
     @pytest.fixture
-    def environment(self, isolation, data_dir, platform) -> CondaEnvironment:
-        command = "micromamba" if shutil.which("micromamba") else "conda"
-        project = Project(
-            isolation,
-            config={
-                "project": {"name": "my_app", "version": "0.0.1"},
-                "tool": {"hatch": {"envs": {"default": {"environment-file": "test.yaml", "command": command}}}},
+    def environment(self, data_dir) -> Path:
+        env_file = "conda.yaml"
+        config = {
+            "project": {"name": "my_app", "version": "0.0.1"},
+            "tool": {
+                "hatch": {
+                    "env": {
+                        "collectors": {"conda": {"default": {"environment-file": env_file}}},
+                        "requires": ["hatch-conda"],
+                    },
+                    "envs": {"default": {"environment-file": env_file, "dependencies": ["tomli"]}},
+                }
             },
-        )
-        environment = CondaEnvironment(
-            root=isolation,
-            metadata=project.metadata,
-            name="default",
-            config=project.config.envs["default"],
-            matrix_variables={},
-            data_directory=data_dir,
-            isolated_data_directory=None,
-            platform=platform,
-            verbosity=0,
-        )
+        }
+        with (data_dir / "pyproject.toml").open("wb") as file:
+            tomli_w.dump(config, file)
 
         # write env file
         deps = {"name": "test", "channels": ["conda-forge"], "dependencies": ["pip", {"pip": ["pyyaml"]}]}
-        env_file = Path(environment.environment_file)
-        with env_file.open("w") as file:
+        conda_file = data_dir / env_file
+        with conda_file.open("w") as file:
             yaml.safe_dump(deps, file)
 
-        return environment
+        return conda_file
 
-    def test_environment_create(self, environment: CondaEnvironment):
-        environment.create()
-        assert "pyyaml" in environment.conda_contents["dependencies"]["pip"]
-        assert environment.dependencies_in_sync()
+    def test_corrrect_dependencies(self, data_dir, environment):
+        env_modified = CondaEnvironmentCollector(data_dir, {"default": {"environment-file": environment}})
+        new_config = {}
+        env_modified.finalize_config(new_config)
+        assert "default" in new_config
+        assert "dependencies" in new_config["default"]
+        dependencies = new_config["default"]["dependencies"]
+        assert "pyyaml" in dependencies
 
-        env_file = Path(environment.environment_file)
-        with env_file.open() as file:
-            config = yaml.safe_load(file)
-        pip_deps = [dep["pip"] for dep in config["dependencies"] if isinstance(dep, dict) and "pip" in dep][0]
-        pip_deps.append("hatch")
-        config["dependencies"] = ["pip", {"pip": pip_deps}]
-        with env_file.open("w") as file:
-            yaml.safe_dump(config, file)
-        assert not environment.dependencies_in_sync()
+        new_config["default"]["dependencies"] = ["tomli"]
+        env_modified.finalize_config(new_config)
+        dependencies = new_config["default"]["dependencies"]
+        assert "tomli" in dependencies
+        assert "pyyaml" in dependencies
+
+    def test_bad_file(self, data_dir):
+        env_modified = CondaEnvironmentCollector(data_dir, {"default": {"environment-file": "does_not_exist.yaml"}})
+        new_config = {"default": {"dependencies": ["tomli"]}}
+        env_modified.finalize_config(new_config)
+        dependencies = new_config["default"]["dependencies"]
+        assert dependencies == ["tomli"]

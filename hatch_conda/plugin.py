@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 import pexpect
 import yaml
+from hatch.env.collectors.plugin.interface import EnvironmentCollectorInterface
 from hatch.env.plugin.interface import EnvironmentInterface
 
 
@@ -88,6 +89,18 @@ def normalize_conda_dict(config: dict[str, str | list | dict[str, Any]]) -> dict
     return normalized_config
 
 
+def read_conda_file(filename: str):
+    if not filename:
+        return {}
+    env_file = Path(filename)
+    if not env_file.exists():
+        return {}
+    with env_file.open() as file:
+        contents = yaml.safe_load(file)
+    normalized_contents = normalize_conda_dict(contents)
+    return normalized_contents
+
+
 class CondaEnvironment(EnvironmentInterface):
     PLUGIN_NAME = "conda"
 
@@ -101,7 +114,6 @@ class CondaEnvironment(EnvironmentInterface):
         self.__python_version = None
 
         self.conda_env_name = f"{self.metadata.core.name}_{self.name}_{self.python_version}"
-        self.conda_contents = {}
         self.project_path = "."
 
         self.shells = ShellManager(self)
@@ -184,16 +196,7 @@ class CondaEnvironment(EnvironmentInterface):
     def find(self):
         return self._get_conda_env_path(self.conda_env_name)
 
-    def read_conda_file(self) -> dict[str, Any]:
-        env_file = Path(self.environment_file)
-        if not env_file.exists():
-            return {}
-        with env_file.open() as file:
-            contents = yaml.safe_load(file)
-        normalized_contents = normalize_conda_dict(contents)
-        return normalized_contents
-
-    def conda_env(self, command="create"):
+    def conda_env(self, command="create", *args: str):
         if not self.environment_file:
             command = [self.config_command, command, "-y"]
             if self.config_conda_forge:
@@ -211,13 +214,13 @@ class CondaEnvironment(EnvironmentInterface):
             command += ["--prefix", self.config_prefix]
         else:
             command += ["-n", self.conda_env_name]
+        command += args
 
         if self.verbosity > 0:  # no cov
             self.platform.check_command(command)
         else:
             self.platform.check_command_output(command)
         self.apply_env_vars()
-        self.conda_contents = self.read_conda_file()
 
     def create(self):
         self.conda_env()
@@ -264,9 +267,6 @@ class CondaEnvironment(EnvironmentInterface):
             )
 
     def dependencies_in_sync(self):
-        new_contents = self.read_conda_file()
-        if self.conda_contents != new_contents:
-            return False
         if not self.dependencies:
             return True
         self.apply_env_vars()
@@ -278,7 +278,7 @@ class CondaEnvironment(EnvironmentInterface):
             return not process.returncode
 
     def sync_dependencies(self):
-        self.conda_env("update")
+        self.conda_env("update", "--prune")
         self.apply_env_vars()
         with self:
             self.platform.check_command(self.construct_pip_install_command(self.dependencies))
@@ -323,3 +323,17 @@ class CondaEnvironment(EnvironmentInterface):
             self.platform.check_command(
                 ["conda", "env", "config", "vars", "set", "-n", self.conda_env_name, "--"] + env_vars
             )
+
+
+class CondaEnvironmentCollector(EnvironmentCollectorInterface):
+    PLUGIN_NAME = "conda"
+
+    def finalize_config(self, config: dict[str, dict]):
+        for env_name, plugin_env_entry in self.config.items():
+            filename = plugin_env_entry.get("environment-file", "")
+
+            conda_config = read_conda_file(filename)
+            deps = [dep for dep in conda_config.get("dependencies", {}).get("pip", {}) if dep]
+            env = config.setdefault(env_name, {})
+            env["dependencies"] = [*deps, *env.get("dependencies", [])]
+            print(env["dependencies"])
