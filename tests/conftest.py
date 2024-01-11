@@ -1,19 +1,21 @@
 import os
+import shutil
 import sys
+from tempfile import TemporaryDirectory
 from typing import Generator
 
 import pytest
 from click.testing import CliRunner as __CliRunner
 from hatch.config.constants import AppEnvVars, ConfigEnvVars
 from hatch.config.user import ConfigFile
-from hatch.project.core import Project
 from hatch.utils.fs import Path, temp_directory
 from hatch.utils.platform import Platform
 from hatch.utils.structures import EnvVars
 
-from .utils import update_project_environment
+from .utils import CondaYAML, PyProject
 
 PLATFORM = Platform()
+CONDA_FILE = "conda.yaml"
 
 
 class CliRunner(__CliRunner):
@@ -99,8 +101,20 @@ def project_name():
     return os.urandom(12).hex()
 
 
+@pytest.fixture(scope="package")
+def plugin_dir(request):
+    project_root_dir = Path(request.fspath).parents[1]
+    with TemporaryDirectory() as d:
+        directory = Path(d, "plugin")
+        shutil.copytree(project_root_dir, directory)
+
+        yield directory.resolve()
+
+        shutil.rmtree(directory, ignore_errors=True)
+
+
 @pytest.fixture
-def conda_project(hatch, temp_dir_data, config_file, project_name):
+def conda_project(hatch, temp_dir_data, config_file, project_name, plugin_dir):
     config_file.model.template.plugins["default"]["tests"] = False
     config_file.save()
 
@@ -111,9 +125,23 @@ def conda_project(hatch, temp_dir_data, config_file, project_name):
 
     project_path = temp_dir_data / project_name
 
-    project = Project(project_path)
-    config = dict(project.config.envs["default"])
-    config.update({"type": "conda"})
-    update_project_environment(project, "default", config)
+    pyproject = PyProject.load(project_path)
+    hatch_conf = pyproject["tool"]["hatch"]
+    hatch_conf["envs"]["default"]["type"] = "conda"
+    hatch_conf["envs"]["default"]["command"] = "conda" if shutil.which("conda") is not None else "micromamba"
+    hatch_conf["env"]["requires"] = [f"hatch_conda @{plugin_dir.as_uri()}"]
+    pyproject.save(project_path)
+
+    conda_config = CondaYAML.load(project_path)
+    conda_config["name"] = "test_hatch"
+    conda_config["channels"] = ["conda-forge"]
+    conda_config["dependencies"] = ["pip"]
+    conda_config.save(project_path)
+
+    with project_path.as_cwd():
+        hatch("env", "prune")
 
     yield project_path
+
+    with project_path.as_cwd():
+        hatch("env", "prune")

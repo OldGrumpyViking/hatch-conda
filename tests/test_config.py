@@ -1,6 +1,6 @@
 from hatch.project.core import Project
 
-from hatch_conda.plugin import CondaEnvironment
+from hatch_conda.plugin import CondaEnvironment, normalize_conda_dict
 
 
 class TestPythonVersion:
@@ -73,3 +73,30 @@ class TestPythonVersion:
         )
 
         assert environment.python_version == "3.10"
+
+
+class TestNormalizeConfig:
+    def test_simple(self):
+        config = {"a": "b", "c": {"d": "e"}}
+        assert normalize_conda_dict(config) == config
+
+    def test_list(self):
+        config = {"a": "b", "c": ["d", "e"]}
+        normalized_config = {"a": "b", "c": {"d": "", "e": ""}}
+        assert normalize_conda_dict(config) == normalized_config
+
+    def test_list_duplicate(self):
+        config = {"a": "b", "c": ["d", "d"]}
+        normalized_config = {"a": "b", "c": {"d": ""}}
+        assert normalize_conda_dict(config) == normalized_config
+
+    def test_nested_list(self):
+        config = {"a": ["b", {"c": "d"}, {"e": ["f", {"g": {"h": ["i"]}}]}]}
+        normalized_config = {"a": {"b": "", "c": "d", "e": {"f": "", "g": {"h": {"i": ""}}}}}
+        assert normalize_conda_dict(config) == normalized_config
+
+    def test_duplicate(self):
+        config = {"a": ["b", {"b": ["c"]}]}
+        normalized_config = {"a": {"b": {"c": "", "": ""}}}
+        assert normalize_conda_dict(config) == normalized_config
+
