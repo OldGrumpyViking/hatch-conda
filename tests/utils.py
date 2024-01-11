@@ -52,12 +52,6 @@ def update_project_environment(project, name, config):
         project.config.envs[name].update(env_config)
 
 
-def build_project(*args):
-    process = subprocess.run(["hatch", "build", *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    if process.returncode:  # no cov
-        raise RuntimeError(process.stdout.decode("utf-8"))
-
-
 def update_project_build(project, target_name, config):
     with pyproject_toml(project) as raw_config:
         build_config = (

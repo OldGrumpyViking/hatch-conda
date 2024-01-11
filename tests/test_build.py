@@ -94,28 +94,28 @@ class TestEnvFile:
 
 
 class TestBuild:
-    def test_default(self, conda_build_project):
-        build_project()  # should always pass
+    def test_default(self, hatch, conda_build_project):
+        hatch("build")  # should always pass
 
-    def test_with_no_args(self, conda_build_project):
-        build_project("-t", "sdist")
+    def test_with_no_args(self, hatch, conda_build_project):
+        hatch("build", "-t", "sdist")
         update_project_build(conda_build_project, "wheel", {})
         with pytest.raises(RuntimeError) as error:
-            build_project("-t", "wheel")
+            hatch("build", "-t", "wheel")
         assert "ValueError: `environment-file`" in error.value.args[0]
 
-    def test_no_deps(self, conda_build_project, conda_file):
-        build_project("-t", "sdist")
+    def test_no_deps(self, hatch, conda_build_project, conda_file):
+        hatch("build", "-t", "sdist")
         update_project_build(conda_build_project, "wheel", {"environment-file": CONDA_FILENAME})
-        build_project("-t", "wheel")
+        hatch("build", "-t", "wheel")
 
-    def test_deps(self, conda_build_project, conda_file):
+    def test_deps(self, hatch, conda_build_project, conda_file):
         dependencies = ["pyyaml"]
         with conda_yaml(conda_build_project, CONDA_FILENAME) as config:
             config["dependencies"].append({"pip": dependencies})
-        build_project("-t", "sdist")
+        hatch("build", "-t", "sdist")
         update_project_build(conda_build_project, "wheel", {"environment-file": CONDA_FILENAME})
-        build_project("-t", "wheel")
+        hatch("build", "-t", "wheel")
 
     def test_dep_added(self, conda_build_project, conda_file):
         dependencies = ["a", "b @ https://example.com", "c == 1.2.3"]
