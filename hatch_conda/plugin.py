@@ -8,7 +8,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from types import FrameType
-from typing import Any, Callable
+from typing import Callable
 
 import pexpect
 import yaml
@@ -198,7 +198,7 @@ class CondaEnvironment(EnvironmentInterface):
 
     def conda_env(self, command="create", *args: str):
         if not self.environment_file:
-            command = [self.config_command, command, "-y"]
+            command = [self.config_command, "create", "-y"]
             if self.config_conda_forge:
                 command += ["-c", "conda-forge", "--no-channel-priority"]
             command += [
@@ -206,10 +206,9 @@ class CondaEnvironment(EnvironmentInterface):
                 "pip",
             ]
         elif self.config_command == "micromamba":
-            command = ["micromamba", command, "-y", "--file", self.environment_file]
+            command = ["micromamba", "create", "-y", "--file", self.environment_file]
         else:
-            command = [self.config_command, "env", command, "-y", "--file", self.environment_file]
-
+            command = [self.config_command, "env", "create", "--file", self.environment_file]
         if self.config_prefix is not None:
             command += ["--prefix", self.config_prefix]
         else:
@@ -242,7 +241,7 @@ class CondaEnvironment(EnvironmentInterface):
         return False
 
     def construct_conda_run_command(self, command):
-        head = [self.config_command, "run"]
+        head = [self.config_command, "run", "--no-capture-output"]
 
         if self.config_prefix is not None:
             head += ["--prefix", self.config_prefix]

@@ -6,13 +6,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.5.0] - 15/01/2024
 
 ### Added
 - The `prefix` configuration option to specify file system location for the environment.
 
 ### Fixed
 - Add env collector plugin to keep track of python dependencies in the conda file
+- Fix capturing of commands output when running commands with `conda run` or alike
 - Fix `cov` script arg covering wrong package.
 
 ## [0.4.1] - 11/07/2023

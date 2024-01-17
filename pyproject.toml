@@ -26,6 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
   "Framework :: Hatch",
@@ -33,7 +34,6 @@ classifiers = [
 dependencies = [
   "hatch>=1.2.0",
   "pexpect~=4.8",
-  "pyyaml>=5.1.0",
 ]
 dynamic = ["version"]
 
