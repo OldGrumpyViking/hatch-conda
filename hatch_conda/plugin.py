@@ -8,7 +8,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from types import FrameType
-from typing import Callable
+from typing import Any, Callable
 
 import pexpect
 import yaml
