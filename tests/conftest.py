@@ -20,7 +20,7 @@ CONDA_FILE = "conda.yaml"
 
 class CliRunner(__CliRunner):
     def __init__(self, command):
-        super().__init__()
+        super().__init__(mix_stderr=False)
         self._command = command
 
     def __call__(self, *args, **kwargs):

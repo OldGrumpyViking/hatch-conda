@@ -99,4 +99,3 @@ class TestNormalizeConfig:
         config = {"a": ["b", {"b": ["c"]}]}
         normalized_config = {"a": {"b": {"c": "", "": ""}}}
         assert normalize_conda_dict(config) == normalized_config
-
