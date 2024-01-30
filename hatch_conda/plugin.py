@@ -8,10 +8,13 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from types import FrameType
-from typing import Callable
+from typing import Any, Callable
 
 import pexpect
+import yaml
+from hatch.env.collectors.plugin.interface import EnvironmentCollectorInterface
 from hatch.env.plugin.interface import EnvironmentInterface
+from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 
 class ShellManager:
@@ -45,6 +48,45 @@ class ShellManager:
         terminal.close()
 
         self.environment.platform.exit_with_code(terminal.exitstatus)
+
+
+def normalize_conda_dict(config: dict[str, str | list | dict[str, Any]]) -> dict[str, str | dict[str, Any]]:
+    """Aims:
+    * remove duplicate entries in lists
+    * equality regardless of entry order in lists
+    Rationale:
+    * Removing and recreating environments is expensive
+    * Changing order of dependencies doesn't impact environment configuration
+    """
+    normalized_config: dict[str, str | dict[str, Any]] = {}
+    for key, value in config.items():
+        if isinstance(value, str):
+            normalized_config[key] = value
+        elif isinstance(value, dict):
+            normalized_config[key] = normalize_conda_dict(value)
+        elif isinstance(value, list):
+            list_config: dict[str, str | dict[str, Any]] = {}
+            for item in value:
+                if isinstance(item, str):
+                    if isinstance(list_config.get(item, None), dict):
+                        # we already have this as a key
+                        list_config[item][""] = ""  # type: ignore[index]
+                    else:
+                        list_config[item] = ""
+                elif isinstance(item, dict):
+                    new_dict = normalize_conda_dict(item)
+                    for k, v in new_dict.items():
+                        if isinstance(list_config.get(k, None), str):
+                            # we already have this as an entry
+                            list_config[k] = {"": "", **v}  # type: ignore[dict-item]
+                        else:
+                            list_config[k] = v
+                else:
+                    raise NotImplementedError("Unexpected list in a list for conda config")
+            normalized_config[key] = list_config
+        else:
+            raise NotImplementedError("Unexpected non-str, non-list, non-dict type in conda config")
+    return normalized_config
 
 
 class CondaEnvironment(EnvironmentInterface):
@@ -142,9 +184,9 @@ class CondaEnvironment(EnvironmentInterface):
     def find(self):
         return self._get_conda_env_path(self.conda_env_name)
 
-    def create(self):
+    def conda_env(self, conda_subcommand, *args: str):
         if not self.environment_file:
-            command = [self.config_command, "create", "-y"]
+            command = [self.config_command, conda_subcommand, "-y"]
             if self.config_conda_forge:
                 command += ["-c", "conda-forge", "--no-channel-priority"]
             command += [
@@ -152,19 +194,23 @@ class CondaEnvironment(EnvironmentInterface):
                 "pip",
             ]
         elif self.config_command == "micromamba":
-            command = ["micromamba", "create", "-y", "--file", self.environment_file]
+            command = ["micromamba", conda_subcommand, "-y", "--file", self.environment_file]
         else:
-            command = [self.config_command, "env", "create", "--file", self.environment_file]
+            command = [self.config_command, "env", conda_subcommand, "--file", self.environment_file]
         if self.config_prefix is not None:
             command += ["--prefix", self.config_prefix]
         else:
             command += ["-n", self.conda_env_name]
+        command += args
 
         if self.verbosity > 0:  # no cov
             self.platform.check_command(command)
         else:
             self.platform.check_command_output(command)
         self.apply_env_vars()
+
+    def create(self):
+        self.conda_env("create")
 
     def remove(self):
         command = [self.config_command, "env", "remove", "-y"]
@@ -219,6 +265,7 @@ class CondaEnvironment(EnvironmentInterface):
             return not process.returncode
 
     def sync_dependencies(self):
+        self.conda_env("update")
         self.apply_env_vars()
         with self:
             self.platform.check_command(self.construct_pip_install_command(self.dependencies))
@@ -263,3 +310,63 @@ class CondaEnvironment(EnvironmentInterface):
             self.platform.check_command(
                 ["conda", "env", "config", "vars", "set", "-n", self.conda_env_name, "--"] + env_vars
             )
+
+
+def read_conda_file(filename: str):
+    if not filename:
+        return {}
+    env_file = Path(filename)
+    if not env_file.exists():
+        return {}
+    with env_file.open("r", encoding="utf8") as file:
+        contents = yaml.safe_load(file)
+    normalized_contents = normalize_conda_dict(contents)
+    return normalized_contents
+
+
+class CondaEnvironmentCollector(EnvironmentCollectorInterface):
+    PLUGIN_NAME = "conda"
+
+    def finalize_config(self, config: dict[str, dict]):
+        for env_name, plugin_env_entry in self.config.items():
+            filename = plugin_env_entry.get("environment-file", "")
+
+            conda_config = read_conda_file(filename)
+            deps = [dep for dep in conda_config.get("dependencies", {}).get("pip", {}) if dep]
+            env = config.setdefault(env_name, {})
+            env["dependencies"] = [*deps, *env.get("dependencies", [])]
+
+
+class BuildInCondaEnvHook(BuildHookInterface):
+    PLUGIN_NAME = "conda"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._config_environment_file = None
+
+    @property
+    def environment_file(self):
+        if self._config_environment_file is not None:
+            return self._config_environment_file
+        env_file = self.config.get("environment-file", "")
+        field_name = f"tool.hatch.build.targets.<TARGET>.hooks.{self.PLUGIN_NAME}.environment-file"
+        if not isinstance(env_file, str):
+            msg = f"Field `{field_name}` must be a string"
+            raise TypeError(msg)
+        file_path = Path(self.root) / env_file
+        if not file_path.exists():
+            msg = f"{env_file} is missing. Please provide correct path for `{field_name}`"
+            raise FileNotFoundError(msg)
+        self._config_environment_file = env_file
+        return self._config_environment_file
+
+    def read_conda_deps(self) -> list[str]:
+        conda_config = read_conda_file(Path(self.root) / self.environment_file)
+        deps = [dep for dep in conda_config.get("dependencies", {}).get("pip", {}) if dep]
+        return deps
+
+    def initialize(self, version: str, build_data: dict[str, Any]):
+        if not self.environment_file:
+            raise ValueError("`environment-file` can't be empty for the conda hook")
+        build_data["dependencies"] += self.read_conda_deps()

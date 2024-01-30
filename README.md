@@ -31,7 +31,8 @@ pip install hatch-conda
 
 ## Configuration
 
-The [environment plugin](https://hatch.pypa.io/latest/plugins/environment/) name is `conda`.
+### Environment
+The [environment plugin](https://hatch.pypa.io/latest/plugins/environment/) name is `conda`. It allows using a conda environment for managing dependencies
 
 - ***pyproject.toml***
 
@@ -45,6 +46,48 @@ The [environment plugin](https://hatch.pypa.io/latest/plugins/environment/) name
     ```toml
     [envs.<ENV_NAME>]
     type = "conda"
+    ```
+
+### Environment Collector
+The [environment collector plugin](https://hatch.pypa.io/latest/plugins/environment-collector/) name is `conda`. It allows using the conda file to keep track of python dependencies, and prevents splitting dependencies between the conda file and `pyproject.toml`. It doesn't need conda to be installed and can be used without the [environment plugin](#environment)
+
+- ***pyproject.toml***
+
+    ```toml
+    [tool.hatch.env]
+    requires = ["hatch-conda"]
+    [tool.hatch.env.collectors.conda.<ENV_NAME>]
+    environment-file = "file.yaml"
+    ```
+
+- ***hatch.toml***
+
+    ```toml
+    [env]
+    requires = ["hatch-conda"]
+    [env.collectors.conda.<ENV_NAME>]
+    environment-file = "file.yaml"
+    ```
+
+### Build Hook
+The [build hook plugin](https://hatch.pypa.io/latest/plugins/build-hook/reference/) name is `conda`. It allows using the conda file to keep track of python dependencies, and prevents splitting dependencies between the conda file and `pyproject.toml`. It doesn't need conda to be installed and can be used without other plugins. Please note that non-pip dependencies are not included in the dependency details for targets like wheel.
+
+- ***pyproject.toml***
+
+    ```toml
+    [tool.hatch.env]
+    requires = ["hatch-conda"]
+    [tool.hatch.build.targets.wheel.hooks.conda]
+    environment-file = "file.yaml"
+    ```
+
+- ***hatch.toml***
+
+    ```toml
+    [env]
+    requires = ["hatch-conda"]
+    [build.targets.wheel.hooks.conda]
+    environment-file = "file.yaml"
     ```
 
 ### Python

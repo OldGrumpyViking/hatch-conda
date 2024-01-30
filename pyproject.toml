@@ -34,6 +34,7 @@ classifiers = [
 dependencies = [
   "hatch>=1.2.0",
   "pexpect~=4.8",
+  "pyyaml>=5.1",
 ]
 dynamic = ["version"]
 
@@ -88,3 +89,9 @@ exclude = [".direnv", ]
 select = ["B","C","E","F","W","B001","B003","B006","B007","B301","B305","B306","B902","Q001","Q002","Q003"]
 ignore = ["E203","E722","W503"]
 max-line-length = 120
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with `-m 'not slow'`)"
+]
