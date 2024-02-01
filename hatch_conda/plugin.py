@@ -183,7 +183,9 @@ class CondaEnvironment(EnvironmentInterface):
         return False
 
     def construct_conda_run_command(self, command):
-        head = [self.config_command, "run", "--no-capture-output"]
+        head = [self.config_command, "run"]
+        if self.config_command in ["conda" , "mamba"]:
+            head.append("--no-capture-output")
 
         if self.config_prefix is not None:
             head += ["--prefix", self.config_prefix]
