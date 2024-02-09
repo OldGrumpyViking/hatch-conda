@@ -33,6 +33,7 @@ classifiers = [
 ]
 dependencies = [
   "hatch>=1.2.0",
+  "hatchling>=1.0.0",
   "pexpect~=4.8",
 ]
 dynamic = ["version"]
