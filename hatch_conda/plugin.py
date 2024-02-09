@@ -12,6 +12,7 @@ from typing import Callable
 
 import pexpect
 from hatch.env.plugin.interface import EnvironmentInterface
+from hatch.utils.env import PythonInfo
 
 
 class ShellManager:
@@ -216,9 +217,10 @@ class CondaEnvironment(EnvironmentInterface):
 
         from hatchling.dep.core import dependencies_in_sync
 
+        python_info = PythonInfo(self.platform)
         with self:
             return dependencies_in_sync(
-                self.dependencies_complex, sys_path=self.virtual_env.sys_path, environment=self.virtual_env.environment
+                self.dependencies_complex, sys_path=python_info.sys_path, environment=self.virtual_env.environment
             )
 
     def sync_dependencies(self):
