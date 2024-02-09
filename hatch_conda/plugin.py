@@ -220,7 +220,7 @@ class CondaEnvironment(EnvironmentInterface):
         python_info = PythonInfo(self.platform)
         with self:
             return dependencies_in_sync(
-                self.dependencies_complex, sys_path=python_info.sys_path, environment=self.virtual_env.environment
+                self.dependencies_complex, sys_path=python_info.sys_path, environment=python_info.environment
             )
 
     def sync_dependencies(self):
