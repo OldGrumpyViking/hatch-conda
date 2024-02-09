@@ -213,12 +213,13 @@ class CondaEnvironment(EnvironmentInterface):
         if not self.dependencies:
             return True
         self.apply_env_vars()
-        with self:
-            process = self.platform.run_command(
-                " ".join(["hatchling", "dep", "synced", "-p", "python", *self.dependencies]),
-                capture_output=True,
+
+        from hatchling.dep.core import dependencies_in_sync
+
+        with self.safe_activation():
+            return dependencies_in_sync(
+                self.dependencies_complex, sys_path=self.virtual_env.sys_path, environment=self.virtual_env.environment
             )
-            return not process.returncode
 
     def sync_dependencies(self):
         self.apply_env_vars()
