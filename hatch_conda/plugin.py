@@ -12,6 +12,7 @@ from typing import Callable
 
 import pexpect
 from hatch.env.plugin.interface import EnvironmentInterface
+from hatch.utils.env import PythonInfo
 
 
 class ShellManager:
@@ -213,12 +214,14 @@ class CondaEnvironment(EnvironmentInterface):
         if not self.dependencies:
             return True
         self.apply_env_vars()
+
+        from hatchling.dep.core import dependencies_in_sync
+
+        python_info = PythonInfo(self.platform)
         with self:
-            process = self.platform.run_command(
-                " ".join(["hatchling", "dep", "synced", "-p", "python", *self.dependencies]),
-                capture_output=True,
+            return dependencies_in_sync(
+                self.dependencies_complex, sys_path=python_info.sys_path, environment=python_info.environment
             )
-            return not process.returncode
 
     def sync_dependencies(self):
         self.apply_env_vars()
